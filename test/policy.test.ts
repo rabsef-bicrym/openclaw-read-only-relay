@@ -59,6 +59,52 @@ function outboundEvent(
   };
 }
 
+const imessageConfig = resolveReadOnlyRelayConfig({
+  rules: [
+    {
+      channel: "imessage",
+      conversationId: "iMessage;-;+15551234567",
+      relay: {
+        channel: "telegram",
+        to: "relay-room",
+      },
+    },
+  ],
+});
+
+const imessageSourceEvent: PluginHookSourcePolicyEvent = {
+  content: "from iMessage",
+  channel: "imessage",
+  conversationId: "iMessage;-;+15551234567",
+  sessionKey: "agent:main:imessage",
+  runId: "run-imessage-1",
+  isGroup: false,
+  sendPolicy: "allow",
+};
+
+function imessageOutboundEvent(
+  overrides: Partial<PluginHookOutboundDeliveryPolicyEvent> = {},
+): PluginHookOutboundDeliveryPolicyEvent {
+  return {
+    kind: "message_action",
+    payload: { text: "reply to iMessage" },
+    source: {
+      channel: "imessage",
+      conversationId: "iMessage;-;+15551234567",
+      sessionKey: "agent:main:imessage",
+    },
+    destination: {
+      channel: "imessage",
+      to: "iMessage;-;+15551234567",
+      conversationId: "iMessage;-;+15551234567",
+      path: "message_action",
+    },
+    sessionKey: "agent:main:imessage",
+    runId: "run-imessage-1",
+    ...overrides,
+  };
+}
+
 describe("read-only relay policy", () => {
   it("forces matching source replies through the message tool", () => {
     expect(buildSourcePolicyResult(baseConfig, sourceEvent)).toEqual({
@@ -155,5 +201,58 @@ describe("read-only relay policy", () => {
       "run:run-1",
       "session:session-1",
     ]);
+  });
+
+  it("prevents iMessage read-only sources from receiving direct replies", () => {
+    expect(buildSourcePolicyResult(imessageConfig, imessageSourceEvent)).toEqual({
+      sourceReplyDeliveryMode: "message_tool_only",
+      reason: "source channel imessage is read-only",
+    });
+
+    expect(applyReadOnlyDeliveryPolicy(imessageConfig, imessageOutboundEvent())).toEqual({
+      decision: "reroute",
+      destination: {
+        channel: "telegram",
+        to: "relay-room",
+        conversationId: "relay-room",
+        path: "message_action",
+      },
+      reason: "read_only_source_relay",
+    });
+
+    expect(
+      applyReadOnlyDeliveryPolicy(
+        imessageConfig,
+        imessageOutboundEvent({
+          destination: {
+            channel: "imessage",
+            to: "current-run",
+            conversationId: "current-run",
+            path: "internal_source",
+          },
+        }),
+      ),
+    ).toEqual({
+      decision: "reroute",
+      destination: {
+        channel: "telegram",
+        to: "relay-room",
+        conversationId: "relay-room",
+        path: "internal_source",
+      },
+      reason: "read_only_source_relay",
+    });
+
+    expect(
+      applyReadOnlyDeliveryPolicy(
+        imessageConfig,
+        imessageOutboundEvent({
+          payload: { text: "SKIP_RELAY" },
+        }),
+      ),
+    ).toEqual({
+      decision: "cancel",
+      reason: "skip_relay",
+    });
   });
 });
