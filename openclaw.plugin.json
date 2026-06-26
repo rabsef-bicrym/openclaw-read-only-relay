@@ -1,0 +1,74 @@
+{
+  "id": "read-only-relay",
+  "uiHints": {
+    "enabled": {
+      "label": "Enabled",
+      "help": "Enable read-only channel relay enforcement."
+    },
+    "skipRelayToken": {
+      "label": "Skip Relay Token",
+      "help": "Exact text that suppresses relay when used as the only reply content."
+    },
+    "rules": {
+      "label": "Read-only Rules",
+      "help": "Channel endpoints that can send inbound messages but cannot receive direct replies."
+    }
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "enabled": {
+        "type": "boolean"
+      },
+      "skipRelayToken": {
+        "type": "string",
+        "minLength": 1
+      },
+      "rules": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["channel", "relay"],
+          "properties": {
+            "channel": {
+              "type": "string",
+              "minLength": 1
+            },
+            "conversationId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "accountId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "relay": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["channel", "to"],
+              "properties": {
+                "channel": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "to": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "accountId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "threadId": {
+                  "type": ["string", "number"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

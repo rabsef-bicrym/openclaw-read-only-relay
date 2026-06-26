@@ -1,0 +1,47 @@
+{
+  "name": "openclaw-read-only-relay",
+  "version": "0.1.0",
+  "description": "Generic read-only channel relay policy plugin for OpenClaw",
+  "type": "module",
+  "main": "index.ts",
+  "license": "MIT",
+  "author": "Eric Helal <rabsef-bicrym@users.noreply.github.com>",
+  "keywords": [
+    "openclaw",
+    "openclaw-plugin",
+    "read-only",
+    "relay",
+    "messaging"
+  ],
+  "files": [
+    "index.ts",
+    "src/**/*.ts",
+    "openclaw.plugin.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "openclaw": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rabsef-bicrym/openclaw-read-only-relay.git"
+  },
+  "homepage": "https://github.com/rabsef-bicrym/openclaw-read-only-relay#readme",
+  "bugs": {
+    "url": "https://github.com/rabsef-bicrym/openclaw-read-only-relay/issues"
+  }
+}
