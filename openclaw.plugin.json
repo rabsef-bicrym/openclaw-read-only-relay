@@ -12,6 +12,14 @@
     "rules": {
       "label": "Read-only Rules",
       "help": "Channel endpoints that can send inbound messages but cannot receive direct replies."
+    },
+    "blockedChannels": {
+      "label": "Blocked Channels",
+      "help": "Optional channel-wide shorthand for messengers that should be read-only."
+    },
+    "relay": {
+      "label": "Shared Relay",
+      "help": "Relay destination used by blockedChannels shorthand rules."
     }
   },
   "configSchema": {
@@ -24,6 +32,35 @@
       "skipRelayToken": {
         "type": "string",
         "minLength": 1
+      },
+      "blockedChannels": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "relay": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["channel", "to"],
+        "properties": {
+          "channel": {
+            "type": "string",
+            "minLength": 1
+          },
+          "to": {
+            "type": "string",
+            "minLength": 1
+          },
+          "accountId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "threadId": {
+            "type": ["string", "number"]
+          }
+        }
       },
       "rules": {
         "type": "array",

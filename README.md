@@ -2,7 +2,11 @@
 
 Generic OpenClaw plugin for read-only messaging sources.
 
-The plugin lets a configured channel endpoint send inbound messages into OpenClaw while preventing OpenClaw from sending direct automatic replies or message-tool replies back through that same endpoint. Blocked replies are rerouted to a configured relay destination unless the attempted reply is exactly `SKIP_RELAY`.
+The plugin lets configured channel endpoints send inbound messages into OpenClaw while preventing OpenClaw from sending direct automatic replies or message-tool replies back through those same endpoints. Blocked replies are rerouted to a configured relay destination unless the attempted reply is exactly `SKIP_RELAY`.
+
+The plugin ships with no facilities blocked. Configure either precise endpoint rules or the optional `blockedChannels` shorthand.
+
+Precise endpoint rule:
 
 ```json
 {
@@ -21,6 +25,27 @@ The plugin lets a configured channel endpoint send inbound messages into OpenCla
               }
             }
           ]
+        }
+      }
+    }
+  }
+}
+```
+
+Channel-wide shorthand:
+
+```json
+{
+  "plugins": {
+    "entries": {
+      "read-only-relay": {
+        "enabled": true,
+        "config": {
+          "blockedChannels": ["imessage", "whatsapp"],
+          "relay": {
+            "channel": "telegram",
+            "to": "123456789"
+          }
         }
       }
     }

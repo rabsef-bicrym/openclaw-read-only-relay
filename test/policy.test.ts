@@ -72,6 +72,14 @@ const imessageConfig = resolveReadOnlyRelayConfig({
   ],
 });
 
+const messengerShortcutConfig = resolveReadOnlyRelayConfig({
+  blockedChannels: ["imessage", "whatsapp"],
+  relay: {
+    channel: "telegram",
+    to: "relay-room",
+  },
+});
+
 const imessageSourceEvent: PluginHookSourcePolicyEvent = {
   content: "from iMessage",
   channel: "imessage",
@@ -106,6 +114,18 @@ function imessageOutboundEvent(
 }
 
 describe("read-only relay policy", () => {
+  it("ships with no blocked facilities by default", () => {
+    const config = resolveReadOnlyRelayConfig({});
+
+    expect(config).toMatchObject({
+      enabled: true,
+      blockedChannels: [],
+      rules: [],
+    });
+    expect(buildSourcePolicyResult(config, sourceEvent)).toBeUndefined();
+    expect(applyReadOnlyDeliveryPolicy(config, outboundEvent())).toBeUndefined();
+  });
+
   it("forces matching source replies through the message tool", () => {
     expect(buildSourcePolicyResult(baseConfig, sourceEvent)).toEqual({
       sourceReplyDeliveryMode: "message_tool_only",
@@ -253,6 +273,52 @@ describe("read-only relay policy", () => {
     ).toEqual({
       decision: "cancel",
       reason: "skip_relay",
+    });
+  });
+
+  it("supports channel-wide messenger blocking as an optional shortcut", () => {
+    expect(buildSourcePolicyResult(messengerShortcutConfig, imessageSourceEvent)).toEqual({
+      sourceReplyDeliveryMode: "message_tool_only",
+      reason: "source channel imessage is read-only",
+    });
+
+    expect(
+      buildSourcePolicyResult(messengerShortcutConfig, {
+        ...imessageSourceEvent,
+        channel: "whatsapp",
+        conversationId: "15551234567@s.whatsapp.net",
+      }),
+    ).toEqual({
+      sourceReplyDeliveryMode: "message_tool_only",
+      reason: "source channel whatsapp is read-only",
+    });
+
+    expect(
+      applyReadOnlyDeliveryPolicy(
+        messengerShortcutConfig,
+        imessageOutboundEvent({
+          source: {
+            channel: "whatsapp",
+            conversationId: "15551234567@s.whatsapp.net",
+            sessionKey: "agent:main:whatsapp",
+          },
+          destination: {
+            channel: "whatsapp",
+            to: "15551234567@s.whatsapp.net",
+            conversationId: "15551234567@s.whatsapp.net",
+            path: "message_action",
+          },
+        }),
+      ),
+    ).toEqual({
+      decision: "reroute",
+      destination: {
+        channel: "telegram",
+        to: "relay-room",
+        conversationId: "relay-room",
+        path: "message_action",
+      },
+      reason: "read_only_source_relay",
     });
   });
 });

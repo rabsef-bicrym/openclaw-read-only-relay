@@ -28,6 +28,8 @@ export type ReadOnlyRule = {
 export type ReadOnlyRelayConfig = {
   enabled: boolean;
   skipRelayToken: string;
+  relay?: RelayDestination;
+  blockedChannels: string[];
   rules: ReadOnlyRule[];
 };
 
@@ -51,12 +53,19 @@ type Endpoint = {
 export function resolveReadOnlyRelayConfig(rawConfig: unknown): ReadOnlyRelayConfig {
   const input = isRecord(rawConfig) ? rawConfig : {};
   const skipRelayToken = cleanString(input.skipRelayToken) ?? DEFAULT_SKIP_RELAY_TOKEN;
-  const rules = Array.isArray(input.rules) ? input.rules.flatMap((entry) => parseRule(entry)) : [];
+  const relay = parseRelay(input.relay);
+  const blockedChannels = parseBlockedChannels(input.blockedChannels);
+  const explicitRules = Array.isArray(input.rules)
+    ? input.rules.flatMap((entry) => parseRule(entry))
+    : [];
+  const channelRules = relay ? blockedChannels.map((channel) => ({ channel, relay })) : [];
 
   return {
     enabled: input.enabled !== false,
     skipRelayToken,
-    rules,
+    ...(relay ? { relay } : {}),
+    blockedChannels,
+    rules: [...explicitRules, ...channelRules],
   };
 }
 
@@ -236,6 +245,23 @@ function parseRelay(value: unknown): RelayDestination | undefined {
     ...(cleanString(value.accountId) ? { accountId: cleanString(value.accountId) } : {}),
     ...(threadId !== undefined ? { threadId } : {}),
   };
+}
+
+function parseBlockedChannels(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const seen = new Set<string>();
+  const channels: string[] = [];
+  for (const entry of value) {
+    const channel = cleanString(entry);
+    if (!channel || seen.has(channel)) {
+      continue;
+    }
+    seen.add(channel);
+    channels.push(channel);
+  }
+  return channels;
 }
 
 function findRuleForOutboundSource(
