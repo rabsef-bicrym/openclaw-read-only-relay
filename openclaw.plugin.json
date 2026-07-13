@@ -1,5 +1,11 @@
 {
   "id": "read-only-relay",
+  "name": "Read-only Relay",
+  "description": "Blocks direct replies to configured read-only channel sources and relays them.",
+  "activation": {
+    "onStartup": true,
+    "onCapabilities": ["hook"]
+  },
   "uiHints": {
     "enabled": {
       "label": "Enabled",
@@ -8,6 +14,14 @@
     "skipRelayToken": {
       "label": "Skip Relay Token",
       "help": "Exact text that suppresses relay when used as the only reply content."
+    },
+    "promptTemplate": {
+      "label": "Prompt Template",
+      "help": "Template used to replace the current inbound prompt for model submission. Defaults to {message}."
+    },
+    "templateEscaping": {
+      "label": "Template Escaping",
+      "help": "Escaping applied to placeholder values before insertion."
     },
     "rules": {
       "label": "Read-only Rules",
@@ -32,6 +46,14 @@
       "skipRelayToken": {
         "type": "string",
         "minLength": 1
+      },
+      "promptTemplate": {
+        "type": "string",
+        "minLength": 1
+      },
+      "templateEscaping": {
+        "type": "string",
+        "enum": ["none", "xml"]
       },
       "blockedChannels": {
         "type": "array",
