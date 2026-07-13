@@ -4,7 +4,7 @@ Generic OpenClaw plugin for read-only messaging sources.
 
 Requires an OpenClaw build that exposes the `source_policy` and `outbound_delivery_policy` plugin hooks.
 
-The plugin lets configured channel endpoints send inbound messages into OpenClaw while preventing OpenClaw from sending direct automatic replies or message-tool replies back through those same endpoints. Blocked replies are rerouted to a configured relay destination unless the attempted reply is exactly `SKIP_RELAY`.
+The plugin lets configured channel endpoints send inbound messages into OpenClaw while preventing OpenClaw from sending direct automatic replies or message-tool replies back through those same endpoints. Blocked replies are rerouted to a configured relay destination unless the attempted reply is exactly `SKIP_RELAY`. Direct `openclaw message send` commands run outside the gateway plugin hook and remain available to operators.
 
 The plugin ships with no facilities blocked. Configure either precise endpoint rules or the optional `blockedChannels` shorthand.
 
