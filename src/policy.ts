@@ -118,7 +118,6 @@ export function buildSourcePolicyResult(
   return {
     promptBody: renderPromptTemplate(active),
     currentInboundContext: null,
-    suppressConversationContext: true,
     reason: `source channel ${active.rule.channel} is read-only`,
   };
 }

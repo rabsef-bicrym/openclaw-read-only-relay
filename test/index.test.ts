@@ -54,7 +54,6 @@ describe("read-only relay plugin entry", () => {
       promptBody:
         "<read_only>hello &lt;world&gt;:iMessage:+15551234567</read_only>",
       currentInboundContext: null,
-      suppressConversationContext: true,
       reason: "source channel imessage is read-only",
     });
   });
