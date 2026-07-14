@@ -189,8 +189,6 @@ describe("read-only relay policy", () => {
       destination: {
         channel: "telegram",
         to: "relay-room",
-        conversationId: "relay-room",
-        path: "message_action",
       },
       reason: "read_only_source_relay",
     });
@@ -237,8 +235,6 @@ describe("read-only relay policy", () => {
       destination: {
         channel: "telegram",
         to: "relay-room",
-        conversationId: "relay-room",
-        path: "internal_source",
       },
       reason: "read_only_source_relay",
     });
@@ -292,8 +288,6 @@ describe("read-only relay policy", () => {
       destination: {
         channel: "telegram",
         to: "relay-room",
-        conversationId: "relay-room",
-        path: "message_action",
       },
       reason: "read_only_source_relay",
     });
@@ -315,8 +309,6 @@ describe("read-only relay policy", () => {
       destination: {
         channel: "telegram",
         to: "relay-room",
-        conversationId: "relay-room",
-        path: "internal_source",
       },
       reason: "read_only_source_relay",
     });
@@ -377,8 +369,6 @@ describe("read-only relay policy", () => {
       destination: {
         channel: "telegram",
         to: "relay-room",
-        conversationId: "relay-room",
-        path: "message_action",
       },
       reason: "read_only_source_relay",
     });

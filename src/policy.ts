@@ -151,8 +151,14 @@ export function applyReadOnlyDeliveryPolicy(
     };
   }
 
-  const destination = buildRelayDestination(rule, event.destination.path);
-  if (matchesDestination(rule, destination)) {
+  const destination = buildRelayDestination(rule);
+  if (
+    matchesRuleEndpoint(rule, {
+      channel: destination.channel,
+      conversationId: destination.to,
+      accountId: destination.accountId,
+    })
+  ) {
     return {
       decision: "cancel",
       reason: "read_only_relay_destination_matches_blocked_source",
@@ -333,13 +339,10 @@ function matchesRuleEndpoint(rule: ReadOnlyRule, endpoint: Endpoint): boolean {
 
 function buildRelayDestination(
   rule: ReadOnlyRule,
-  path: PluginHookOutboundDeliveryPolicyDestination["path"],
-): PluginHookOutboundDeliveryPolicyDestination {
+): Omit<PluginHookOutboundDeliveryPolicyDestination, "conversationId" | "path"> {
   return {
     channel: rule.relay.channel,
     to: rule.relay.to,
-    conversationId: rule.relay.to,
-    path,
     ...(rule.relay.accountId ? { accountId: rule.relay.accountId } : {}),
     ...(rule.relay.threadId !== undefined
       ? { threadId: rule.relay.threadId }
