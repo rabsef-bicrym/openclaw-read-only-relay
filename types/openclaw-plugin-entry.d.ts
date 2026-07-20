@@ -46,7 +46,6 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
       resumableText?: string;
       promptJoiner?: "\n\n" | "\n" | " ";
     } | null;
-    suppressConversationContext?: boolean;
     reason?: string;
   };
 
