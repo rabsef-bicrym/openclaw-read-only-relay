@@ -1,60 +1,153 @@
-import type {
-  OpenClawPluginApi,
-  PluginHookHandlerMap,
-} from "openclaw/plugin-sdk/plugin-entry";
-import { describe, expect, it } from "vitest";
+import type { OpenClawPluginApi, PluginHookHandlerMap } from "openclaw/plugin-sdk/plugin-entry";
+import { describe, expect, it, vi } from "vitest";
 import plugin from "../index.js";
 
 type CapturedHooks = Partial<PluginHookHandlerMap>;
 
 function createApi(overrides: Partial<OpenClawPluginApi> = {}) {
   const hooks: CapturedHooks = {};
+  const sendPayload = vi.fn(async () => ({ ok: true }));
   const api: OpenClawPluginApi = {
+    config: {},
+    logger: {},
+    pluginConfig: {},
+    runtime: {
+      channel: {
+        outbound: {
+          loadAdapter: async () => ({ sendPayload }),
+        },
+      },
+    },
     ...overrides,
     on(hookName, handler) {
       hooks[hookName] = handler as CapturedHooks[typeof hookName];
     },
   };
-  return { api, hooks };
+  return { api, hooks, sendPayload };
 }
 
+const pluginConfig = {
+  blockedChannels: ["imessage"],
+  relay: {
+    channel: "telegram",
+    to: "relay-room",
+  },
+  promptTemplate: "<read_only>{message}:{platform}:{sender}</read_only>",
+  templateEscaping: "xml",
+};
+
 describe("read-only relay plugin entry", () => {
-  it("uses the plugin config supplied by OpenClaw", async () => {
-    const { api, hooks } = createApi({
-      pluginConfig: {
-        blockedChannels: ["imessage"],
-        relay: {
-          channel: "telegram",
-          to: "relay-room",
-        },
-        promptTemplate:
-          "<read_only>{message}:{platform}:{sender}</read_only>",
-        templateEscaping: "xml",
-      },
-    });
+  it("replaces one model prompt using the plugin configuration", async () => {
+    const { api, hooks } = createApi({ pluginConfig });
     plugin.register(api);
 
-    const result = await hooks.source_policy?.(
+    const result = await hooks.before_prompt_build?.(
+      { prompt: "hello <world>", messages: [] },
       {
-        content: "hello <world>",
-        body: "hello <world>",
+        channelId: "+15551234567",
         channel: "imessage",
-        conversationId: "+15551234567",
+        chatId: "+15551234567",
         senderId: "+15551234567",
-        isGroup: false,
-        sendPolicy: "allow",
-      },
-      {
-        channelId: "imessage",
-        conversationId: "+15551234567",
       },
     );
 
     expect(result).toEqual({
-      promptBody:
-        "<read_only>hello &lt;world&gt;:iMessage:+15551234567</read_only>",
-      currentInboundContext: null,
-      reason: "source channel imessage is read-only",
+      prompt: "<read_only>hello &lt;world&gt;:iMessage:+15551234567</read_only>",
     });
+  });
+
+  it("cancels an automatic blocked reply and relays its full payload", async () => {
+    const { api, hooks, sendPayload } = createApi({ pluginConfig });
+    plugin.register(api);
+
+    const payload = { text: "relay this", mediaUrls: ["file:///tmp/image.png"] };
+    const result = await hooks.reply_payload_sending?.(
+      { payload, kind: "final", channel: "imessage", sessionKey: "agent:main:eric" },
+      {
+        channelId: "imessage",
+        conversationId: "+15551234567",
+        sessionKey: "agent:main:eric",
+      },
+    );
+
+    expect(result).toEqual({ cancel: true, reason: "read_only_source_relay" });
+    await vi.waitFor(() => expect(sendPayload).toHaveBeenCalledOnce());
+    expect(sendPayload).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "relay-room",
+        text: "relay this",
+        payload,
+      }),
+    );
+  });
+
+  it("cancels exact SKIP_RELAY without sending a relay", async () => {
+    const { api, hooks, sendPayload } = createApi({ pluginConfig });
+    plugin.register(api);
+
+    const result = await hooks.reply_payload_sending?.(
+      {
+        payload: { text: "SKIP_RELAY" },
+        kind: "final",
+        channel: "imessage",
+        sessionKey: "agent:main:eric",
+      },
+      {
+        channelId: "imessage",
+        conversationId: "+15551234567",
+        sessionKey: "agent:main:eric",
+      },
+    );
+
+    expect(result).toEqual({ cancel: true, reason: "skip_relay" });
+    expect(sendPayload).not.toHaveBeenCalled();
+  });
+
+  it("allows authenticated operator CLI sends even when delivery derives a session", async () => {
+    const { api, hooks, sendPayload } = createApi({ pluginConfig });
+    plugin.register(api);
+
+    const result = await hooks.message_sending?.(
+      { to: "+15551234567", content: "operator message" },
+      {
+        channelId: "imessage",
+        conversationId: "+15551234567",
+        gatewayClientScopes: ["operator.write"],
+        sessionKey: "agent:main:imessage:direct:+15551234567",
+      },
+    );
+
+    expect(result).toBeUndefined();
+    expect(sendPayload).not.toHaveBeenCalled();
+  });
+
+  it("blocks non-operator delivery even when no session is attached", async () => {
+    const { api, hooks, sendPayload } = createApi({ pluginConfig });
+    plugin.register(api);
+
+    const result = await hooks.message_sending?.(
+      { to: "+15551234567", content: "background delivery" },
+      { channelId: "imessage", conversationId: "+15551234567" },
+    );
+
+    expect(result).toEqual({ cancel: true, cancelReason: "read_only_source_relay" });
+    await vi.waitFor(() => expect(sendPayload).toHaveBeenCalledOnce());
+  });
+
+  it("cancels and relays an explicit agent message-tool send", async () => {
+    const { api, hooks, sendPayload } = createApi({ pluginConfig });
+    plugin.register(api);
+
+    const result = await hooks.message_sending?.(
+      { to: "+15551234567", content: "explicit reply" },
+      {
+        channelId: "imessage",
+        conversationId: "+15551234567",
+        sessionKey: "agent:main:eric",
+      },
+    );
+
+    expect(result).toEqual({ cancel: true, cancelReason: "read_only_source_relay" });
+    await vi.waitFor(() => expect(sendPayload).toHaveBeenCalledOnce());
   });
 });

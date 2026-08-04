@@ -1,10 +1,14 @@
 declare module "openclaw/plugin-sdk/plugin-entry" {
-  export type PluginHookMessageContext = {
-    channelId: string;
+  export type PluginHookAgentContext = {
+    channelId?: string;
+    channel?: string;
+    messageProvider?: string;
+    chatId?: string;
     accountId?: string;
     conversationId?: string;
+    gatewayClientScopes?: readonly string[];
     sessionKey?: string;
-    runId?: string;
+    senderId?: string;
   };
 
   export type PluginHookReplyPayload = {
@@ -17,110 +21,94 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
     spokenText?: string;
   };
 
-  export type PluginHookSourcePolicyEvent = {
-    content: string;
-    body?: string;
-    channel: string;
-    accountId?: string;
-    conversationId?: string;
-    sessionKey?: string;
-    runId?: string;
-    senderId?: string;
-    replyToId?: string;
-    replyToBody?: string;
-    replyToSender?: string;
-    isGroup: boolean;
-    chatType?: string;
-    inboundEventKind?: string;
-    requestedSourceReplyDeliveryMode?: string;
-    configuredVisibleReplies?: "automatic" | "message_tool";
-    defaultVisibleReplies?: "automatic" | "message_tool";
-    sendPolicy: "allow" | "deny";
+  export type PluginHookBeforePromptBuildEvent = {
+    prompt: string;
+    messages: unknown[];
   };
 
-  export type PluginHookSourcePolicyResult = {
-    sourceReplyDeliveryMode?: "message_tool_only";
-    promptBody?: string;
-    currentInboundContext?: {
-      text: string;
-      resumableText?: string;
-      promptJoiner?: "\n\n" | "\n" | " ";
-    } | null;
+  export type PluginHookBeforePromptBuildResult = {
+    prompt?: string;
+    systemPrompt?: string;
+    prependContext?: string;
+    appendContext?: string;
+    prependSystemContext?: string;
+    appendSystemContext?: string;
+  };
+
+  export type PluginHookReplyPayloadSendingEvent = {
+    payload: PluginHookReplyPayload;
+    kind: string;
+    channel?: string;
+    sessionKey?: string;
+    runId?: string;
+  };
+
+  export type PluginHookReplyPayloadSendingResult = {
+    payload?: PluginHookReplyPayload;
+    cancel?: boolean;
     reason?: string;
   };
 
-  export type PluginHookOutboundDeliveryPolicyPath =
-    "durable_delivery" | "message_action" | "internal_source";
-
-  export type PluginHookOutboundDeliveryPolicySource = {
-    channel?: string;
-    conversationId?: string;
-    accountId?: string;
-    sessionKey?: string;
-    senderId?: string;
-    threadId?: string | number;
-    inboundEventKind?: string;
-  };
-
-  export type PluginHookOutboundDeliveryPolicyDestination = {
-    channel: string;
+  export type PluginHookMessageSendingEvent = {
     to: string;
-    conversationId: string;
-    accountId?: string;
+    content: string;
+    replyToId?: string | number;
     threadId?: string | number;
-    path: PluginHookOutboundDeliveryPolicyPath;
+    metadata?: Record<string, unknown>;
   };
 
-  export type PluginHookOutboundDeliveryPolicyEvent = {
-    payload: PluginHookReplyPayload;
-    kind: string;
-    action?: string;
-    source?: PluginHookOutboundDeliveryPolicySource;
-    destination: PluginHookOutboundDeliveryPolicyDestination;
-    sessionKey?: string;
-    runId?: string;
+  export type PluginHookMessageSendingResult = {
+    content?: string;
+    cancel?: boolean;
+    cancelReason?: string;
+    metadata?: Record<string, unknown>;
   };
-
-  export type PluginHookOutboundDeliveryPolicyResult =
-    | {
-        decision?: "allow";
-        payload?: PluginHookReplyPayload;
-        reason?: string;
-      }
-    | {
-        decision: "cancel";
-        payload?: PluginHookReplyPayload;
-        reason?: string;
-      }
-    | {
-        decision: "reroute";
-        destination: Omit<
-          PluginHookOutboundDeliveryPolicyDestination,
-          "conversationId" | "path"
-        >;
-        payload?: PluginHookReplyPayload;
-        reason?: string;
-      };
 
   export type PluginHookHandlerMap = {
-    source_policy: (
-      event: PluginHookSourcePolicyEvent,
-      ctx: PluginHookMessageContext,
+    before_prompt_build: (
+      event: PluginHookBeforePromptBuildEvent,
+      ctx: PluginHookAgentContext,
     ) =>
-      | PluginHookSourcePolicyResult
+      | PluginHookBeforePromptBuildResult
       | void
-      | Promise<PluginHookSourcePolicyResult | void>;
-    outbound_delivery_policy: (
-      event: PluginHookOutboundDeliveryPolicyEvent,
-      ctx: PluginHookMessageContext,
+      | Promise<PluginHookBeforePromptBuildResult | void>;
+    reply_payload_sending: (
+      event: PluginHookReplyPayloadSendingEvent,
+      ctx: PluginHookAgentContext,
     ) =>
-      | PluginHookOutboundDeliveryPolicyResult
+      | PluginHookReplyPayloadSendingResult
       | void
-      | Promise<PluginHookOutboundDeliveryPolicyResult | void>;
+      | Promise<PluginHookReplyPayloadSendingResult | void>;
+    message_sending: (
+      event: PluginHookMessageSendingEvent,
+      ctx: PluginHookAgentContext,
+    ) => PluginHookMessageSendingResult | void | Promise<PluginHookMessageSendingResult | void>;
+  };
+
+  export type ChannelOutboundAdapter = {
+    sendPayload?: (params: {
+      cfg: unknown;
+      to: string;
+      text: string;
+      payload: PluginHookReplyPayload;
+      accountId?: string;
+      threadId?: string | number;
+    }) => Promise<unknown>;
   };
 
   export type OpenClawPluginApi = {
+    config: unknown;
     pluginConfig?: Record<string, unknown>;
+    logger: {
+      error?: (message: string) => void;
+    };
+    runtime: {
+      channel: {
+        outbound: {
+          loadAdapter: (channel: string) => Promise<ChannelOutboundAdapter | undefined>;
+        };
+      };
+    };
     on: <K extends keyof PluginHookHandlerMap>(
       hookName: K,
       handler: PluginHookHandlerMap[K],
