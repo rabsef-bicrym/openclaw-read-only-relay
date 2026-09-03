@@ -81,7 +81,7 @@ export default definePluginEntry({
         return undefined;
       }
       return buildSourcePolicyResult(getConfig(), {
-        content: event.prompt,
+        content: event.transcriptPrompt ?? event.prompt,
         channel,
         conversationId: ctx.chatId ?? ctx.channelId,
         accountId: ctx.accountId,

@@ -23,6 +23,7 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
 
   export type PluginHookBeforePromptBuildEvent = {
     prompt: string;
+    transcriptPrompt?: string;
     messages: unknown[];
   };
 

@@ -42,7 +42,11 @@ describe("read-only relay plugin entry", () => {
     plugin.register(api);
 
     const result = await hooks.before_prompt_build?.(
-      { prompt: "hello <world>", messages: [] },
+      {
+        prompt: "OpenClaw assembled metadata\n\nhello <world>",
+        transcriptPrompt: "hello <world>",
+        messages: [],
+      },
       {
         channelId: "+15551234567",
         channel: "imessage",
@@ -53,6 +57,20 @@ describe("read-only relay plugin entry", () => {
 
     expect(result).toEqual({
       prompt: "<read_only>hello &lt;world&gt;:iMessage:+15551234567</read_only>",
+    });
+  });
+
+  it("uses the model prompt when no separate transcript prompt is available", async () => {
+    const { api, hooks } = createApi({ pluginConfig });
+    plugin.register(api);
+
+    const result = await hooks.before_prompt_build?.(
+      { prompt: "hello", messages: [] },
+      { channel: "imessage", chatId: "+15551234567", senderId: "+15551234567" },
+    );
+
+    expect(result).toEqual({
+      prompt: "<read_only>hello:iMessage:+15551234567</read_only>",
     });
   });
 

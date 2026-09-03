@@ -2,7 +2,7 @@
 
 Generic OpenClaw plugin for read-only messaging sources.
 
-Requires an OpenClaw build whose `before_prompt_build` result supports model-prompt replacement. Delivery enforcement uses the standard `reply_payload_sending` and `message_sending` hooks available in OpenClaw `2026.6.33`.
+Requires OpenClaw `2026.8.2` or newer with the proposed `before_prompt_build` model-prompt replacement and Gateway-scope hook additions. Delivery enforcement uses the standard `reply_payload_sending` and `message_sending` hooks.
 
 The plugin lets configured channel endpoints send inbound messages into OpenClaw while preventing OpenClaw from sending direct automatic replies or message-tool replies back through those same endpoints. Blocked replies are rerouted to a configured relay destination unless the attempted reply is exactly `SKIP_RELAY`. Authenticated operator sends such as `openclaw message send` carry `operator.write` or `operator.admin` scope and remain available.
 
@@ -16,7 +16,12 @@ Local checkout install:
 ```bash
 openclaw plugins install --link /path/to/openclaw-read-only-relay
 openclaw config set plugins.entries.read-only-relay.enabled true
+openclaw config set plugins.entries.read-only-relay.hooks.allowConversationAccess true
 ```
+
+OpenClaw 2.0 requires the explicit conversation-access grant because the plugin
+reads the current inbound message in `before_prompt_build`. Without it, delivery
+blocking still loads but the configurable inbound prompt template does not run.
 
 Precise endpoint rule:
 
@@ -65,7 +70,7 @@ Channel-wide shorthand:
 }
 ```
 
-When a rule matches the current source, the plugin replaces the current inbound model prompt with the rendered `promptTemplate`. The default template is `{message}`.
+When a rule matches the current source, the plugin replaces the current inbound model prompt with the rendered `promptTemplate`. `{message}` is the exact current transcript message, not OpenClaw's model-only routing or context envelope. The default template is `{message}`.
 Prompt template placeholders:
 
 ```text
