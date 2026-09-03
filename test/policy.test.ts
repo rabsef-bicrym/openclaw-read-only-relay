@@ -155,6 +155,50 @@ describe("read-only relay policy", () => {
     );
   });
 
+  it("prefers a sender name and phone number over an opaque conversation id", () => {
+    const config = resolveReadOnlyRelayConfig({
+      promptTemplate: "{sender}",
+      rules: [
+        {
+          channel: "imessage",
+          relay: { channel: "telegram", to: "relay-room" },
+        },
+      ],
+    });
+
+    expect(
+      buildSourcePolicyResult(config, {
+        content: "hello",
+        channel: "imessage",
+        conversationId: "chat_id:329",
+        senderId: "chat_id:329",
+        senderName: "Alice",
+        senderE164: "+15551234567",
+      }),
+    ).toEqual({ prompt: "Alice (+15551234567)" });
+  });
+
+  it("does not present opaque internal identifiers as sender identity", () => {
+    const config = resolveReadOnlyRelayConfig({
+      promptTemplate: "{sender}",
+      rules: [
+        {
+          channel: "imessage",
+          relay: { channel: "telegram", to: "relay-room" },
+        },
+      ],
+    });
+
+    expect(
+      buildSourcePolicyResult(config, {
+        content: "hello",
+        channel: "imessage",
+        conversationId: "chat_id:329",
+        senderId: "329",
+      }),
+    ).toEqual({ prompt: "Unknown sender" });
+  });
+
   it("rejects unknown prompt template placeholders", () => {
     expect(() =>
       resolveReadOnlyRelayConfig({

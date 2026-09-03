@@ -9,6 +9,8 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
     gatewayClientScopes?: readonly string[];
     sessionKey?: string;
     senderId?: string;
+    senderName?: string;
+    senderE164?: string;
   };
 
   export type PluginHookReplyPayload = {

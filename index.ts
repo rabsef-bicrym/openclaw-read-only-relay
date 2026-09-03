@@ -87,6 +87,8 @@ export default definePluginEntry({
         accountId: ctx.accountId,
         sessionKey: ctx.sessionKey,
         senderId: ctx.senderId,
+        senderName: ctx.senderName,
+        senderE164: ctx.senderE164,
       });
     });
 

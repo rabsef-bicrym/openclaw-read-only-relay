@@ -42,6 +42,8 @@ export type ActiveReadOnlySource = {
     conversationId?: string;
     accountId?: string;
     senderId?: string;
+    senderName?: string;
+    senderE164?: string;
   };
   message: string;
   promptTemplate: string;
@@ -63,6 +65,8 @@ export type ReadOnlySourceEvent = {
   accountId?: string;
   sessionKey?: string;
   senderId?: string;
+  senderName?: string;
+  senderE164?: string;
 };
 
 export type ReadOnlyDeliveryEvent = {
@@ -194,6 +198,8 @@ export function buildActiveReadOnlySource(
       ...(event.conversationId ? { conversationId: event.conversationId } : {}),
       ...(event.accountId ? { accountId: event.accountId } : {}),
       ...(event.senderId ? { senderId: event.senderId } : {}),
+      ...(event.senderName ? { senderName: event.senderName } : {}),
+      ...(event.senderE164 ? { senderE164: event.senderE164 } : {}),
     },
     message: event.body ?? event.content,
     promptTemplate: config.promptTemplate,
@@ -342,7 +348,29 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function describeSender(source: ActiveReadOnlySource["source"]): string {
-  return source.senderId ?? source.conversationId ?? "Unknown sender";
+  const name = usefulDisplayIdentity(source.senderName);
+  const phone = usefulDisplayIdentity(source.senderE164);
+  if (name && phone && name !== phone) {
+    return `${name} (${phone})`;
+  }
+  return (
+    name ??
+    phone ??
+    usefulDisplayIdentity(source.senderId) ??
+    usefulDisplayIdentity(source.conversationId) ??
+    "Unknown sender"
+  );
+}
+
+function usefulDisplayIdentity(value: string | undefined): string | undefined {
+  const candidate = cleanString(value);
+  if (!candidate) {
+    return undefined;
+  }
+  if (/^(?:chat(?:_id|_guid|_identifier)?|conv(?:ersation)?)[_:]/i.test(candidate)) {
+    return undefined;
+  }
+  return /^\d+$/.test(candidate) ? undefined : candidate;
 }
 
 function findUnknownTemplatePlaceholder(template: string): string | undefined {

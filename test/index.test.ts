@@ -64,12 +64,15 @@ describe("read-only relay plugin entry", () => {
         channelId: "+15551234567",
         channel: "imessage",
         chatId: "+15551234567",
-        senderId: "+15551234567",
+        senderId: "chat_id:329",
+        senderName: "Alice",
+        senderE164: "+15551234567",
       },
     );
 
     expect(result).toEqual({
-      prompt: "<read_only>hello &lt;world&gt;:iMessage:+15551234567</read_only>",
+      prompt:
+        "<read_only>hello &lt;world&gt;:iMessage:Alice (+15551234567)</read_only>",
     });
   });
 
