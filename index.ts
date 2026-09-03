@@ -89,6 +89,7 @@ export default definePluginEntry({
         senderId: ctx.senderId,
         senderName: ctx.senderName,
         senderE164: ctx.senderE164,
+        senderIsSelf: ctx.channelContext?.sender?.isSelf === true,
       });
     });
 

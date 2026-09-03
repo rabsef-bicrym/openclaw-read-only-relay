@@ -67,6 +67,7 @@ describe("read-only relay plugin entry", () => {
         senderId: "chat_id:329",
         senderName: "Alice",
         senderE164: "+15551234567",
+        channelContext: { sender: { isSelf: true } },
       },
     );
 
@@ -88,6 +89,24 @@ describe("read-only relay plugin entry", () => {
     expect(result).toEqual({
       prompt: "<read_only>hello:iMessage:+15551234567</read_only>",
     });
+  });
+
+  it("forwards the channel-authenticated self sender fact", async () => {
+    const { api, hooks } = createApi({
+      pluginConfig: { ...pluginConfig, promptTemplate: "{operator_guidance}" },
+    });
+    plugin.register(api);
+
+    const result = await hooks.before_prompt_build?.(
+      { prompt: "hello", messages: [] },
+      {
+        channel: "imessage",
+        senderId: "+15551234567",
+        channelContext: { sender: { isSelf: true } },
+      },
+    );
+
+    expect(result?.prompt).toContain("direct instruction from your user");
   });
 
   it("cancels an automatic blocked reply and relays its full payload", async () => {

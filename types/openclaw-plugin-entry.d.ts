@@ -11,6 +11,14 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
     senderId?: string;
     senderName?: string;
     senderE164?: string;
+    channelContext?: {
+      sender?: {
+        id?: string;
+        isSelf?: boolean;
+        [key: string]: unknown;
+      };
+      [key: string]: unknown;
+    };
   };
 
   export type PluginHookReplyPayload = {

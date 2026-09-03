@@ -155,6 +155,31 @@ describe("read-only relay policy", () => {
     );
   });
 
+  it("treats channel-authenticated self messages as direct user instructions", () => {
+    const config = resolveReadOnlyRelayConfig({
+      promptTemplate: "{operator_guidance}\n{response_options}",
+      rules: [
+        {
+          channel: "imessage",
+          relay: { channel: "telegram", to: "relay-room" },
+        },
+      ],
+    });
+
+    const result = buildSourcePolicyResult(config, {
+      content: "relay this",
+      channel: "imessage",
+      senderId: "+15551234567",
+      senderIsSelf: true,
+    });
+
+    expect(result?.prompt).toContain("direct instruction from your user");
+    expect(result?.prompt).toContain(
+      "Emit SKIP_RELAY only when the message asks for no relay",
+    );
+    expect(result?.prompt).not.toContain("not from your user");
+  });
+
   it("prefers a sender name and phone number over an opaque conversation id", () => {
     const config = resolveReadOnlyRelayConfig({
       promptTemplate: "{sender}",
