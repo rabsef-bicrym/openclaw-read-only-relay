@@ -113,7 +113,11 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
     on: <K extends keyof PluginHookHandlerMap>(
       hookName: K,
       handler: PluginHookHandlerMap[K],
-      opts?: { priority?: number; timeoutMs?: number },
+      opts?: {
+        priority?: number;
+        timeoutMs?: number;
+        failurePolicy?: K extends "message_sending" ? "fail-open" | "fail-closed" : never;
+      },
     ) => void;
   };
 

@@ -110,24 +110,28 @@ export default definePluginEntry({
       return enforceDecision(api, decision, event.payload);
     });
 
-    api.on("message_sending", (event, ctx) => {
-      if (!ctx.channelId || isOperatorDelivery(ctx.gatewayClientScopes)) {
-        return undefined;
-      }
-      const payload = payloadFromMessageEvent(event);
-      const decision = applyReadOnlyDeliveryPolicy(getConfig(), {
-        payload,
-        destination: {
-          channel: ctx.channelId,
-          to: event.to,
-          conversationId: event.to,
-          accountId: ctx.accountId,
-        },
-        sessionKey: ctx.sessionKey,
-      });
-      const result = enforceDecision(api, decision, payload);
-      return result ? { cancel: true, cancelReason: result.reason } : undefined;
-    });
+    api.on(
+      "message_sending",
+      (event, ctx) => {
+        if (!ctx.channelId || isOperatorDelivery(ctx.gatewayClientScopes)) {
+          return undefined;
+        }
+        const payload = payloadFromMessageEvent(event);
+        const decision = applyReadOnlyDeliveryPolicy(getConfig(), {
+          payload,
+          destination: {
+            channel: ctx.channelId,
+            to: event.to,
+            conversationId: event.to,
+            accountId: ctx.accountId,
+          },
+          sessionKey: ctx.sessionKey,
+        });
+        const result = enforceDecision(api, decision, payload);
+        return result ? { cancel: true, cancelReason: result.reason } : undefined;
+      },
+      { failurePolicy: "fail-closed" },
+    );
   },
 });
 

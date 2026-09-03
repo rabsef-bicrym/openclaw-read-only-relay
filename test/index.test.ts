@@ -3,9 +3,13 @@ import { describe, expect, it, vi } from "vitest";
 import plugin from "../index.js";
 
 type CapturedHooks = Partial<PluginHookHandlerMap>;
+type CapturedHookOptions = Partial<
+  Record<keyof PluginHookHandlerMap, { failurePolicy?: "fail-open" | "fail-closed" }>
+>;
 
 function createApi(overrides: Partial<OpenClawPluginApi> = {}) {
   const hooks: CapturedHooks = {};
+  const hookOptions: CapturedHookOptions = {};
   const sendPayload = vi.fn(async () => ({ ok: true }));
   const api: OpenClawPluginApi = {
     config: {},
@@ -19,11 +23,12 @@ function createApi(overrides: Partial<OpenClawPluginApi> = {}) {
       },
     },
     ...overrides,
-    on(hookName, handler) {
+    on(hookName, handler, options) {
       hooks[hookName] = handler as CapturedHooks[typeof hookName];
+      hookOptions[hookName] = options;
     },
   };
-  return { api, hooks, sendPayload };
+  return { api, hooks, hookOptions, sendPayload };
 }
 
 const pluginConfig = {
@@ -37,6 +42,14 @@ const pluginConfig = {
 };
 
 describe("read-only relay plugin entry", () => {
+  it("registers outbound enforcement as fail closed", () => {
+    const { api, hookOptions } = createApi({ pluginConfig });
+
+    plugin.register(api);
+
+    expect(hookOptions.message_sending).toEqual({ failurePolicy: "fail-closed" });
+  });
+
   it("replaces one model prompt using the plugin configuration", async () => {
     const { api, hooks } = createApi({ pluginConfig });
     plugin.register(api);
