@@ -101,7 +101,11 @@ describe("read-only relay plugin entry", () => {
       },
     );
 
-    expect(result).toEqual({ cancel: true, reason: "read_only_source_relay" });
+    expect(result).toEqual({
+      cancel: true,
+      reason: "read_only_source_relay",
+      suppressFallback: true,
+    });
     await vi.waitFor(() => expect(sendPayload).toHaveBeenCalledOnce());
     expect(sendPayload).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -130,7 +134,7 @@ describe("read-only relay plugin entry", () => {
       },
     );
 
-    expect(result).toEqual({ cancel: true, reason: "skip_relay" });
+    expect(result).toEqual({ cancel: true, reason: "skip_relay", suppressFallback: true });
     expect(sendPayload).not.toHaveBeenCalled();
   });
 

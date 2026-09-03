@@ -46,14 +46,14 @@ function enforceDecision(
   api: OpenClawPluginApi,
   decision: ReadOnlyDeliveryDecision | undefined,
   payload: PluginHookReplyPayload,
-): { cancel: true; reason: string } | undefined {
+): { cancel: true; reason: string; suppressFallback: true } | undefined {
   if (!decision) {
     return undefined;
   }
   if (decision.decision === "reroute") {
     startRelay(api, decision.destination, payload);
   }
-  return { cancel: true, reason: decision.reason };
+  return { cancel: true, reason: decision.reason, suppressFallback: true };
 }
 
 function payloadFromMessageEvent(event: PluginHookMessageSendingEvent): PluginHookReplyPayload {

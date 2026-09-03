@@ -48,6 +48,7 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
     payload?: PluginHookReplyPayload;
     cancel?: boolean;
     reason?: string;
+    suppressFallback?: boolean;
   };
 
   export type PluginHookMessageSendingEvent = {
